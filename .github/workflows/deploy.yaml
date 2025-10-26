@@ -1,0 +1,25 @@
+name: Deploy MultiDocker
+on:
+  push:
+    branches:
+      - master # check your repo, your default branch might be master!
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin # instead: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - run: docker build -t savchev/react-test -f ./client/Dockerfile.dev ./client
+      - run: docker run -e CI=true savchev/react-test npm test
+
+      # you need to create the repos on Docker Hub
+      - run: docker build -t savchev/multi-client ./client
+      - run: docker build -t savchev/multi-nginx ./nginx
+      - run: docker build -t savchev/multi-server ./server
+      - run: docker build -t savchev/multi-worker ./worker
+
+      - run: docker push savchev/multi-client
+      - run: docker push savchev/multi-nginx
+      - run: docker push savchev/multi-server
+      - run: docker push savchev/multi-worker
